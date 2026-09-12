@@ -1,12 +1,28 @@
 import { config } from "dotenv";
-import { PrismaClient, EstadoUnidad } from "@prisma/client";
+import {
+  CanalContacto,
+  EstadoUnidad,
+  NivelAcreditacion,
+  PrismaClient,
+  TipoAcceso,
+  TipoOperacion,
+  UrgenciaPropietario,
+} from "@prisma/client";
 
 config({ path: ".env.local" });
 config();
 
 const prisma = new PrismaClient();
 
+const fotosLineaBase = {
+  living: "https://cdn.example.com/begonias/linea-base/living.jpg",
+  cocina: "https://cdn.example.com/begonias/linea-base/cocina.jpg",
+  dormitorio: "https://cdn.example.com/begonias/linea-base/dormitorio.jpg",
+};
+
 async function main() {
+  await prisma.mensaje.deleteMany();
+  await prisma.movimientoOferta.deleteMany();
   await prisma.eventoAcceso.deleteMany();
   await prisma.incidencia.deleteMany();
   await prisma.visita.deleteMany();
@@ -22,109 +38,159 @@ async function main() {
 
   const edificio = await prisma.edificio.create({
     data: {
-      nombre: "Edificio Recoletos 8",
-      direccion: "Calle de Recoletos 8",
-      ciudad: "Madrid",
-      codigoPostal: "28001",
-      latitud: 40.4215,
-      longitud: -3.6906,
-      instruccionesAcceso:
-        "Portería en horario laboral. Fuera de horario, usar la caja de llaves del portal (código de la reserva).",
+      nombre: "Residencial Begonias",
+      direccion: "Calle Las Begonias 441",
+      ciudad: "San Isidro, Lima",
+      codigoPostal: "15073",
+      latitud: -12.0974,
+      longitud: -77.0341,
+      administracionNombre: "Administración Begonias SAC",
+      administracionContacto: "+51 1 421 8800",
+      porteriaContacto: "+51 989 441 220",
+      porteriaCanal: "whatsapp",
+      protocoloAcceso:
+        "Portería 24 h. El visitante se registra con DNI. La caja de llaves está en el hall del piso. Sin confirmación de portería no se entrega código.",
+      ventanaInicio: "08:00",
+      ventanaFin: "21:00",
+      intervaloMinimoMinutos: 30,
+      reglamento:
+        "Visitas autónomas solo para compradores acreditados. Máximo 3 personas. Prohibido fumar.",
+      acuerdoAdministracion: true,
     },
   });
 
-  const elena = await prisma.propietario.create({
+  const rosa = await prisma.propietario.create({
     data: {
-      nombre: "Elena",
-      apellidos: "Vargas Ruiz",
-      email: "elena.vargas@example.com",
-      telefono: "+34 611 220 118",
-      documentoIdentidad: "45221890L",
+      nombre: "Rosa María",
+      apellidos: "Villanueva Quispe",
+      email: "rosa.villanueva@example.com",
+      telefono: "+51 998 120 441",
+      documentoIdentidad: "10458231",
+      titularidadVerificada: true,
+      acuerdoFirmadoEn: new Date("2026-08-12T15:00:00.000Z"),
+      canalContacto: CanalContacto.whatsapp,
     },
   });
 
-  const miguel = await prisma.propietario.create({
+  const fernando = await prisma.propietario.create({
     data: {
-      nombre: "Miguel",
-      apellidos: "Herrera Soto",
-      email: "miguel.herrera@example.com",
-      telefono: "+34 622 447 903",
-      documentoIdentidad: "38100412H",
+      nombre: "Fernando",
+      apellidos: "Cubas Aliaga",
+      email: "fernando.cubas@example.com",
+      telefono: "+51 987 655 018",
+      documentoIdentidad: "08721456",
+      titularidadVerificada: true,
+      acuerdoFirmadoEn: new Date("2026-08-14T16:30:00.000Z"),
+      canalContacto: CanalContacto.whatsapp,
     },
   });
 
   const unidades = [
     {
-      referencia: "REC8-1A",
-      planta: "1",
+      referencia: "BEG-301",
+      planta: "3",
       puerta: "A",
       tipologia: "2 dormitorios",
-      superficieM2: 68,
+      superficieM2: 85,
       habitaciones: 2,
-      banos: 1,
-      precioPedido: 425000,
-      precioPublicado: 419000,
-      descripcion: "Exterior a calle Recoletos, reformada en 2023.",
-      propietarios: [{ propietarioId: elena.id, porcentaje: 100, esContacto: true }],
+      banos: 2,
+      precioPedido: 298000,
+      precioPublicado: 285000,
+      precioMinimo: 270000,
+      urgencia: UrgenciaPropietario.media,
+      formaPagoAceptada: "contado_o_credito",
+      descripcion: "Frente a parque. Luz de tarde, cocina abierta.",
+      identificadorCaja: "IGLOO-BEG-301",
+      identificadorCamara: "REOLINK-BEG-301",
+      urlRecorrido360: "https://cdn.example.com/begonias/360/beg-301",
+      propietarios: [{ propietarioId: rosa.id, porcentaje: 100, esContacto: true }],
     },
     {
-      referencia: "REC8-1B",
-      planta: "1",
+      referencia: "BEG-302",
+      planta: "3",
       puerta: "B",
       tipologia: "1 dormitorio",
-      superficieM2: 48,
+      superficieM2: 58,
       habitaciones: 1,
       banos: 1,
-      precioPedido: 310000,
-      precioPublicado: 305000,
-      descripcion: "Interior luminoso con patio de manzana.",
-      propietarios: [{ propietarioId: elena.id, porcentaje: 100, esContacto: true }],
+      precioPedido: 205000,
+      precioPublicado: 195000,
+      precioMinimo: 185000,
+      urgencia: UrgenciaPropietario.alta,
+      formaPagoAceptada: "contado",
+      descripcion: "Interior silencioso, ideal para renta corta.",
+      identificadorCaja: "IGLOO-BEG-302",
+      identificadorCamara: "REOLINK-BEG-302",
+      urlRecorrido360: "https://cdn.example.com/begonias/360/beg-302",
+      propietarios: [{ propietarioId: rosa.id, porcentaje: 100, esContacto: true }],
     },
     {
-      referencia: "REC8-2A",
-      planta: "2",
+      referencia: "BEG-501",
+      planta: "5",
       puerta: "A",
       tipologia: "3 dormitorios",
-      superficieM2: 92,
+      superficieM2: 120,
       habitaciones: 3,
       banos: 2,
-      precioPedido: 560000,
-      precioPublicado: 545000,
-      descripcion: "Esquina. Salón independiente y terraza de 8 m².",
+      precioPedido: 435000,
+      precioPublicado: 420000,
+      precioMinimo: 400000,
+      urgencia: UrgenciaPropietario.baja,
+      formaPagoAceptada: "contado_o_credito",
+      descripcion: "Esquina. Estar independiente y terraza de 12 m².",
+      identificadorCaja: "IGLOO-BEG-501",
+      identificadorCamara: "REOLINK-BEG-501",
+      urlRecorrido360: "https://cdn.example.com/begonias/360/beg-501",
       propietarios: [
-        { propietarioId: elena.id, porcentaje: 50, esContacto: true },
-        { propietarioId: miguel.id, porcentaje: 50, esContacto: false },
+        { propietarioId: rosa.id, porcentaje: 50, esContacto: true },
+        { propietarioId: fernando.id, porcentaje: 50, esContacto: false },
       ],
     },
     {
-      referencia: "REC8-2B",
-      planta: "2",
+      referencia: "BEG-502",
+      planta: "5",
       puerta: "B",
       tipologia: "2 dormitorios",
-      superficieM2: 71,
+      superficieM2: 92,
       habitaciones: 2,
       banos: 2,
-      precioPedido: 440000,
-      precioPublicado: 435000,
-      descripcion: "Cocina abierta y armarios empotrados.",
-      propietarios: [{ propietarioId: miguel.id, porcentaje: 100, esContacto: true }],
+      precioPedido: 325000,
+      precioPublicado: 310000,
+      precioMinimo: 295000,
+      urgencia: UrgenciaPropietario.media,
+      formaPagoAceptada: "contado_o_credito",
+      descripcion: "Remodelado en 2025. Closets empotrados.",
+      identificadorCaja: "IGLOO-BEG-502",
+      identificadorCamara: "REOLINK-BEG-502",
+      urlRecorrido360: "https://cdn.example.com/begonias/360/beg-502",
+      propietarios: [
+        { propietarioId: fernando.id, porcentaje: 100, esContacto: true },
+      ],
     },
     {
-      referencia: "REC8-ATICO",
-      planta: "ático",
+      referencia: "BEG-801",
+      planta: "8",
       puerta: "única",
-      tipologia: "3 dormitorios ático",
-      superficieM2: 110,
+      tipologia: "3 dormitorios",
+      superficieM2: 145,
       habitaciones: 3,
-      banos: 2,
-      precioPedido: 780000,
-      precioPublicado: 765000,
-      descripcion: "Ático con terraza de 28 m² y vistas al Retiro.",
-      propietarios: [{ propietarioId: miguel.id, porcentaje: 100, esContacto: true }],
+      banos: 3,
+      precioPedido: 610000,
+      precioPublicado: 580000,
+      precioMinimo: 550000,
+      urgencia: UrgenciaPropietario.baja,
+      formaPagoAceptada: "contado",
+      descripcion: "Último piso. Terraza hacia el golf y vista a San Isidro.",
+      identificadorCaja: "IGLOO-BEG-801",
+      identificadorCamara: "REOLINK-BEG-801",
+      urlRecorrido360: "https://cdn.example.com/begonias/360/beg-801",
+      propietarios: [
+        { propietarioId: fernando.id, porcentaje: 100, esContacto: true },
+      ],
     },
   ];
 
-  const publicadaEn = new Date("2026-09-01T09:00:00.000Z");
+  const publicadaEn = new Date("2026-09-01T14:00:00.000Z");
 
   for (const unidad of unidades) {
     const { propietarios, ...datos } = unidad;
@@ -132,6 +198,11 @@ async function main() {
       data: {
         ...datos,
         estado: EstadoUnidad.publicada,
+        tipoOperacion: TipoOperacion.venta,
+        moneda: "USD",
+        tipoAcceso: TipoAcceso.caja_codigo,
+        camaraConectada: true,
+        fotosLineaBase,
         publicadaEn,
         edificioId: edificio.id,
         titulares: { create: propietarios },
@@ -139,33 +210,58 @@ async function main() {
     });
   }
 
-  const acreditadoEn = new Date("2026-08-20T10:00:00.000Z");
+  const acreditadoEn = new Date("2026-08-20T15:00:00.000Z");
 
   await prisma.comprador.createMany({
     data: [
       {
-        nombre: "Lucía",
-        apellidos: "Navarro Gil",
-        email: "lucia.navarro@example.com",
-        telefono: "+34 600 112 334",
-        acreditado: true,
+        nombre: "Daniela",
+        apellidos: "Torres Salazar",
+        email: "daniela.torres@example.com",
+        telefono: "+51 990 118 334",
+        identidadVerificada: true,
+        nivelAcreditacion: NivelAcreditacion.nivel_2,
         acreditadoEn,
+        esInversor: false,
+        zonaBusqueda: "San Isidro, Miraflores",
+        metrosMin: 80,
+        metrosMax: 120,
+        presupuestoMin: 250000,
+        presupuestoMax: 400000,
+        monedaBusqueda: "USD",
       },
       {
-        nombre: "Pablo",
-        apellidos: "Ortega León",
-        email: "pablo.ortega@example.com",
-        telefono: "+34 655 889 221",
-        acreditado: true,
+        nombre: "Diego",
+        apellidos: "Paredes Núñez",
+        email: "diego.paredes@example.com",
+        telefono: "+51 987 220 119",
+        identidadVerificada: true,
+        nivelAcreditacion: NivelAcreditacion.nivel_1,
         acreditadoEn,
+        esInversor: false,
+        zonaBusqueda: "San Isidro",
+        metrosMin: 50,
+        metrosMax: 80,
+        presupuestoMin: 180000,
+        presupuestoMax: 250000,
+        monedaBusqueda: "USD",
       },
       {
-        nombre: "Sara",
-        apellidos: "Jiménez Prado",
-        email: "sara.jimenez@example.com",
-        telefono: "+34 617 440 558",
-        acreditado: true,
+        nombre: "Claudia",
+        apellidos: "Herrera Palacios",
+        email: "claudia.herrera@example.com",
+        telefono: "+51 995 441 772",
+        identidadVerificada: true,
+        nivelAcreditacion: NivelAcreditacion.nivel_2,
         acreditadoEn,
+        esInversor: true,
+        zonaBusqueda: "San Isidro",
+        metrosMin: 70,
+        metrosMax: 150,
+        presupuestoMin: 300000,
+        presupuestoMax: 600000,
+        monedaBusqueda: "USD",
+        descartes: [{ motivo: "sin_ascensor" }, { motivo: "primer_piso" }],
       },
     ],
   });
@@ -174,9 +270,8 @@ async function main() {
     edificio: edificio.nombre,
     unidades: await prisma.unidad.count(),
     propietarios: await prisma.propietario.count(),
-    compradoresAcreditados: await prisma.comprador.count({
-      where: { acreditado: true },
-    }),
+    compradores: await prisma.comprador.count(),
+    inversores: await prisma.comprador.count({ where: { esInversor: true } }),
   };
 
   console.log("Seed completado:", resumen);

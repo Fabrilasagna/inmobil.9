@@ -38,10 +38,10 @@ La app queda en [http://127.0.0.1:43123](http://127.0.0.1:43123).
 
 El seed crea datos para desarrollar el módulo 5 (visitas) sobre inventario real:
 
-- 1 edificio (Recoletos 8, Madrid)
-- 5 unidades en estado `publicada`
+- 1 edificio (Residencial Begonias, San Isidro, Lima)
+- 5 unidades en venta, estado `publicada`, acceso con caja de código
 - 2 propietarios
-- 3 compradores acreditados
+- 3 compradores acreditados (uno inversor)
 
 ## Módulos
 

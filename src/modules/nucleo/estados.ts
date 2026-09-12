@@ -1,4 +1,4 @@
-import type { EstadoUnidad } from "@prisma/client";
+import type { EstadoUnidad, TipoAcceso, TipoOperacion } from "@prisma/client";
 
 export const ETIQUETAS_ESTADO_UNIDAD: Record<EstadoUnidad, string> = {
   prospecto: "Prospecto",
@@ -25,3 +25,14 @@ export const ORDEN_ESTADO_UNIDAD: EstadoUnidad[] = [
   "cerrada",
   "retirada",
 ];
+
+export const ETIQUETAS_TIPO_OPERACION: Record<TipoOperacion, string> = {
+  venta: "Venta",
+  alquiler: "Alquiler",
+};
+
+export const ETIQUETAS_TIPO_ACCESO: Record<TipoAcceso, string> = {
+  caja_codigo: "Caja con código",
+  cerradura_inteligente: "Cerradura inteligente",
+  ninguno: "Sin acceso",
+};

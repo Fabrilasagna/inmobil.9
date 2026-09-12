@@ -26,8 +26,8 @@ export default function HomePage() {
           <CardHeader>
             <CardTitle>Unidades</CardTitle>
             <CardDescription>
-              Listado interno con estado, edificio y titulares. El seed deja 5
-              unidades publicadas en Recoletos 8.
+              Listado interno con estado, tipo de operación, precio y acceso. El
+              seed deja 5 unidades publicadas en Residencial Begonias.
             </CardDescription>
           </CardHeader>
           <CardContent>
