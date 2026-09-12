@@ -1,0 +1,347 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// Ciclo de vida de una unidad (módulo 7 — núcleo operativo).
+enum EstadoUnidad {
+  prospecto
+  calificada
+  firmada
+  en_alta
+  publicada
+  con_oferta
+  reservada
+  en_cierre
+  cerrada
+  retirada
+}
+
+// Flujo del módulo 5 (visitas autónomas con acceso).
+// solicitada → confirmada → acceso_emitido → en_curso → realizada
+// desvíos: cancelada | no_asistio | vencida
+enum EstadoReservaVisita {
+  solicitada
+  confirmada
+  acceso_emitido
+  en_curso
+  realizada
+  cancelada
+  no_asistio
+  vencida
+}
+
+enum ResultadoVisita {
+  pendiente
+  interesada
+  no_interesada
+}
+
+enum TipoEventoAcceso {
+  codigo_validado
+  apertura
+  cierre
+  denegado
+  timeout
+}
+
+enum EstadoOferta {
+  enviada
+  contraoferta
+  aceptada
+  rechazada
+  caducada
+  retirada
+}
+
+enum EstadoOperacionCierre {
+  abierta
+  documentacion
+  pendiente_firma
+  firmada
+  caida
+}
+
+enum SeveridadIncidencia {
+  baja
+  media
+  alta
+  critica
+}
+
+enum EstadoIncidencia {
+  abierta
+  en_curso
+  resuelta
+  cerrada
+}
+
+enum CanalConversacion {
+  whatsapp
+  email
+  telefono
+  interno
+}
+
+enum EstadoConversacion {
+  abierta
+  archivada
+}
+
+model Edificio {
+  id                   String   @id @default(cuid())
+  nombre               String
+  direccion            String
+  ciudad               String
+  codigoPostal         String?
+  latitud              Decimal? @db.Decimal(9, 6)
+  longitud             Decimal? @db.Decimal(9, 6)
+  instruccionesAcceso  String?  @db.Text
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  unidades Unidad[]
+
+  @@map("edificios")
+}
+
+model Unidad {
+  id              String       @id @default(cuid())
+  referencia      String       @unique
+  estado          EstadoUnidad @default(prospecto)
+  edificioId      String
+  planta          String?
+  puerta          String?
+  tipologia       String?
+  superficieM2    Decimal?     @db.Decimal(8, 2)
+  habitaciones    Int?
+  banos           Int?
+  precioPedido    Decimal?     @db.Decimal(12, 2)
+  precioPublicado Decimal?     @db.Decimal(12, 2)
+  descripcion     String?      @db.Text
+  publicadaEn     DateTime?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  edificio         Edificio            @relation(fields: [edificioId], references: [id], onDelete: Restrict)
+  titulares        UnidadPropietario[]
+  reservasVisita   ReservaVisita[]
+  visitas          Visita[]
+  ofertas          Oferta[]
+  operacionesCierre OperacionCierre[]
+  incidencias      Incidencia[]
+  conversaciones   Conversacion[]
+  eventosAcceso    EventoAcceso[]
+
+  @@index([estado])
+  @@index([edificioId])
+  @@map("unidades")
+}
+
+model Propietario {
+  id                  String   @id @default(cuid())
+  nombre              String
+  apellidos           String
+  email               String   @unique
+  telefono            String?
+  documentoIdentidad  String?  @unique
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  unidades       UnidadPropietario[]
+  conversaciones Conversacion[]
+
+  @@map("propietarios")
+}
+
+model UnidadPropietario {
+  unidadId        String
+  propietarioId   String
+  porcentaje      Decimal @default(100) @db.Decimal(5, 2)
+  esContacto      Boolean @default(true)
+
+  unidad      Unidad      @relation(fields: [unidadId], references: [id], onDelete: Cascade)
+  propietario Propietario @relation(fields: [propietarioId], references: [id], onDelete: Restrict)
+
+  @@id([unidadId, propietarioId])
+  @@map("unidad_propietarios")
+}
+
+model Comprador {
+  id              String    @id @default(cuid())
+  nombre          String
+  apellidos       String
+  email           String    @unique
+  telefono        String?
+  acreditado      Boolean   @default(false)
+  acreditadoEn    DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  reservasVisita    ReservaVisita[]
+  visitas           Visita[]
+  ofertas           Oferta[]
+  operacionesCierre OperacionCierre[]
+  conversaciones    Conversacion[]
+
+  @@index([acreditado])
+  @@map("compradores")
+}
+
+model ReservaVisita {
+  id                   String              @id @default(cuid())
+  unidadId             String
+  compradorId          String
+  estado               EstadoReservaVisita @default(solicitada)
+  iniciaEn             DateTime
+  terminaEn            DateTime
+  codigoAcceso         String?
+  codigoAccesoExpiraEn DateTime?
+  notas                String?             @db.Text
+  canceladaEn          DateTime?
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
+
+  unidad        Unidad         @relation(fields: [unidadId], references: [id], onDelete: Restrict)
+  comprador     Comprador      @relation(fields: [compradorId], references: [id], onDelete: Restrict)
+  visita        Visita?
+  eventosAcceso EventoAcceso[]
+  incidencias   Incidencia[]
+
+  @@index([unidadId, iniciaEn])
+  @@index([compradorId])
+  @@index([estado])
+  @@map("reservas_visita")
+}
+
+model EventoAcceso {
+  id              String           @id @default(cuid())
+  reservaVisitaId String
+  unidadId        String
+  tipo            TipoEventoAcceso
+  origen          String
+  exitoso         Boolean          @default(true)
+  ocurridoEn      DateTime         @default(now())
+  metadata        Json?
+
+  reservaVisita ReservaVisita @relation(fields: [reservaVisitaId], references: [id], onDelete: Cascade)
+  unidad        Unidad        @relation(fields: [unidadId], references: [id], onDelete: Restrict)
+
+  @@index([reservaVisitaId, ocurridoEn])
+  @@index([unidadId])
+  @@map("eventos_acceso")
+}
+
+model Visita {
+  id              String          @id @default(cuid())
+  reservaVisitaId String          @unique
+  unidadId        String
+  compradorId     String
+  iniciadaEn      DateTime
+  finalizadaEn    DateTime?
+  resultado       ResultadoVisita @default(pendiente)
+  notasInternas   String?         @db.Text
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  reservaVisita ReservaVisita @relation(fields: [reservaVisitaId], references: [id], onDelete: Restrict)
+  unidad        Unidad        @relation(fields: [unidadId], references: [id], onDelete: Restrict)
+  comprador     Comprador     @relation(fields: [compradorId], references: [id], onDelete: Restrict)
+  incidencias   Incidencia[]
+
+  @@index([unidadId])
+  @@index([compradorId])
+  @@map("visitas")
+}
+
+model Oferta {
+  id            String      @id @default(cuid())
+  unidadId      String
+  compradorId   String
+  importe       Decimal     @db.Decimal(12, 2)
+  estado        EstadoOferta @default(enviada)
+  validezHasta  DateTime?
+  condiciones   String?     @db.Text
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  unidad    Unidad            @relation(fields: [unidadId], references: [id], onDelete: Restrict)
+  comprador Comprador         @relation(fields: [compradorId], references: [id], onDelete: Restrict)
+  cierre    OperacionCierre?
+
+  @@index([unidadId, estado])
+  @@index([compradorId])
+  @@map("ofertas")
+}
+
+model OperacionCierre {
+  id                  String                @id @default(cuid())
+  unidadId            String
+  ofertaId            String                @unique
+  compradorId         String
+  estado              EstadoOperacionCierre @default(abierta)
+  precioAcordado      Decimal               @db.Decimal(12, 2)
+  fechaObjetivoFirma  DateTime?
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime              @updatedAt
+
+  unidad    Unidad    @relation(fields: [unidadId], references: [id], onDelete: Restrict)
+  oferta    Oferta    @relation(fields: [ofertaId], references: [id], onDelete: Restrict)
+  comprador Comprador @relation(fields: [compradorId], references: [id], onDelete: Restrict)
+  incidencias Incidencia[]
+
+  @@index([unidadId])
+  @@index([estado])
+  @@map("operaciones_cierre")
+}
+
+model Incidencia {
+  id                String             @id @default(cuid())
+  titulo            String
+  descripcion       String             @db.Text
+  tipo              String
+  severidad         SeveridadIncidencia @default(media)
+  estado            EstadoIncidencia    @default(abierta)
+  unidadId          String?
+  reservaVisitaId   String?
+  visitaId          String?
+  operacionCierreId String?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+
+  unidad          Unidad?          @relation(fields: [unidadId], references: [id], onDelete: SetNull)
+  reservaVisita   ReservaVisita?   @relation(fields: [reservaVisitaId], references: [id], onDelete: SetNull)
+  visita          Visita?          @relation(fields: [visitaId], references: [id], onDelete: SetNull)
+  operacionCierre OperacionCierre? @relation(fields: [operacionCierreId], references: [id], onDelete: SetNull)
+
+  @@index([estado, severidad])
+  @@index([unidadId])
+  @@map("incidencias")
+}
+
+model Conversacion {
+  id             String             @id @default(cuid())
+  canal          CanalConversacion
+  asunto         String
+  estado         EstadoConversacion @default(abierta)
+  ultimoMensaje  String?            @db.Text
+  ultimoMensajeEn DateTime?
+  unidadId       String?
+  compradorId    String?
+  propietarioId  String?
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+
+  unidad      Unidad?      @relation(fields: [unidadId], references: [id], onDelete: SetNull)
+  comprador   Comprador?   @relation(fields: [compradorId], references: [id], onDelete: SetNull)
+  propietario Propietario? @relation(fields: [propietarioId], references: [id], onDelete: SetNull)
+
+  @@index([canal, estado])
+  @@index([unidadId])
+  @@map("conversaciones")
+}
