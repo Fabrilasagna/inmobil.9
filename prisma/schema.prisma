@@ -56,6 +56,13 @@ enum EstadoReservaVisita {
   vencida
 }
 
+enum TipoEventoReserva {
+  creacion
+  notificacion_porteria
+  confirmacion_porteria
+  cancelacion
+}
+
 enum TipoEventoAcceso {
   codigo_validado
   apertura
@@ -170,6 +177,7 @@ model Edificio {
   protocoloAcceso         String?  @db.Text
   ventanaInicio           String   @default("08:00")
   ventanaFin              String   @default("21:00")
+  duracionVisitaMinutos   Int      @default(45)
   intervaloMinimoMinutos  Int      @default(30)
   reglamento              String?  @db.Text
   acuerdoAdministracion   Boolean  @default(false)
@@ -307,14 +315,28 @@ model ReservaVisita {
 
   unidad        Unidad         @relation(fields: [unidadId], references: [id], onDelete: Restrict)
   comprador     Comprador      @relation(fields: [compradorId], references: [id], onDelete: Restrict)
-  visita        Visita?
-  eventosAcceso EventoAcceso[]
-  incidencias   Incidencia[]
+  visita         Visita?
+  eventosAcceso  EventoAcceso[]
+  eventosReserva EventoReserva[]
+  incidencias    Incidencia[]
 
   @@index([unidadId, iniciaEn])
   @@index([compradorId])
   @@index([estado])
   @@map("reservas_visita")
+}
+
+model EventoReserva {
+  id              String            @id @default(cuid())
+  reservaVisitaId String
+  tipo            TipoEventoReserva
+  ocurridoEn      DateTime          @default(now())
+  payload         Json?
+
+  reservaVisita ReservaVisita @relation(fields: [reservaVisitaId], references: [id], onDelete: Cascade)
+
+  @@index([reservaVisitaId, ocurridoEn])
+  @@map("eventos_reserva")
 }
 
 model EventoAcceso {

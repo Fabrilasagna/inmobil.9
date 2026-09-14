@@ -15,6 +15,9 @@ export function AppHeader() {
           <Button variant="ghost" size="sm" asChild>
             <Link href="/interno/unidades">Unidades</Link>
           </Button>
+          <Button variant="ghost" size="sm" asChild>
+            <Link href="/interno/reservas">Reservas</Link>
+          </Button>
           <Button variant="outline" size="sm" asChild>
             <Link href="/api/health">Salud</Link>
           </Button>

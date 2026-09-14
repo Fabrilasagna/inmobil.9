@@ -23,6 +23,7 @@ const fotosLineaBase = {
 async function main() {
   await prisma.mensaje.deleteMany();
   await prisma.movimientoOferta.deleteMany();
+  await prisma.eventoReserva.deleteMany();
   await prisma.eventoAcceso.deleteMany();
   await prisma.incidencia.deleteMany();
   await prisma.visita.deleteMany();
@@ -52,6 +53,7 @@ async function main() {
         "Portería 24 h. El visitante se registra con DNI. La caja de llaves está en el hall del piso. Sin confirmación de portería no se entrega código.",
       ventanaInicio: "08:00",
       ventanaFin: "21:00",
+      duracionVisitaMinutos: 45,
       intervaloMinimoMinutos: 30,
       reglamento:
         "Visitas autónomas solo para compradores acreditados. Máximo 3 personas. Prohibido fumar.",
